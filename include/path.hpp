@@ -2,12 +2,12 @@
 #ifndef DJIKSTRA_PATH_HPP
 #define DJIKSTRA_PATH_HPP
 
+#include <ostream>
 #include <vector>
 
 class Step {
 
 public:
-
     Step(int x, int y) : x(x), y(y) {}
 
     int getX() const {
@@ -21,6 +21,12 @@ public:
     bool operator==(const Step &other) const {
         return x == other.x && y == other.y;
     }
+
+    friend std::ostream &operator<<(std::ostream &os, const Step &s) {
+        os << "[" << s.x << "," << s.y << "]";
+        return os;
+    }
+
 
 private:
     int x, y;
@@ -42,16 +48,8 @@ public:
         steps.insert(steps.begin(), Step{x, y});
     }
 
-    void appendStep(int x, int y) {
-        steps.emplace_back(Step{x, y});
-    }
-
-    bool contains(int x, int y) const {
-        return std::find(steps.begin(), steps.end(), Step(x, y)) != steps.end();
-    }
-
 private:
     std::vector<Step> steps;
 };
 
-#endif //DJIKSTRA_PATH_HPP
+#endif//DJIKSTRA_PATH_HPP

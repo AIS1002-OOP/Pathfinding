@@ -2,15 +2,14 @@
 #ifndef DJIKSTRA_TILEBASEDMAP_HPP
 #define DJIKSTRA_TILEBASEDMAP_HPP
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 class TileBasedMap {
 
 public:
-
-    TileBasedMap(const std::vector<std::string> &map) : map(map) {}
+    TileBasedMap(std::vector<std::string> map) : map(std::move(map)) {}
 
     char get(int x, int y) {
         return map[y][x];
@@ -34,9 +33,12 @@ public:
         return 1;
     }
 
+    std::vector<std::string> data() {
+        return map;
+    }
+
 private:
     std::vector<std::string> map;
-
 };
 
-#endif //DJIKSTRA_TILEBASEDMAP_HPP
+#endif//DJIKSTRA_TILEBASEDMAP_HPP
