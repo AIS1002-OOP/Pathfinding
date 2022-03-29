@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 /**
  * A path determined by some path finding algorithm. A series of steps from
@@ -63,7 +64,7 @@ public:
      *
      * @return True if contains the coordinate, false otherwise
      */
-    [[nodiscard]] bool contains(const Coordinate &c) const {
+    [[nodiscard]] bool contains(const Coordinate &c) {
         return std::find(steps_.begin(), steps_.end(), c) != std::end(steps_);
     }
 

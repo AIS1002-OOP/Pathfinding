@@ -11,6 +11,7 @@
 #include <iostream>
 #include <utility>
 #include <vector>
+#include <memory>
 
 class AStar: public Pathfinder {
 
