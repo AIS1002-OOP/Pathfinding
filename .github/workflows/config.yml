@@ -20,7 +20,8 @@ jobs:
           cmake --build build
       - name: Test
         run: |
-          cd build/bin && ctest
+          cd build/tests
+          ctest --output-on-failure
 
   build-on-windows:
 
@@ -40,4 +41,5 @@ jobs:
 
       - name: Test
         run: |
-          cd build/bin && ctest -C Release
+          cd build/tests
+          ctest -C Release --output-on-failure
