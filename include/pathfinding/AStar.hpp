@@ -1,6 +1,10 @@
 
-#ifndef DJIKSTRA_ASTAR_HPP
-#define DJIKSTRA_ASTAR_HPP
+#ifndef PATHFINDING_ASTAR_HPP
+#define PATHFINDING_ASTAR_HPP
+
+#include "Heuristic.hpp"
+#include "Path.hpp"
+#include "TileBasedMap.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -9,18 +13,14 @@
 #include <utility>
 #include <vector>
 
-#include "path.hpp"
-#include "tilebasedmap.hpp"
-
 class AStar {
 
 private:
     struct Node {
 
-        int x;
-        /** The y coordinate of the node */
-        int y;
-        /** The path cost for this node */
+        // The coordinate of the node
+        Coordinate xy;
+
         float cost = 0;
         /** The parent of this node, how we reached it in the search */
         Node *parent = nullptr;
@@ -29,7 +29,7 @@ private:
         /** The search depth of this node */
         int depth = 0;
 
-        Node(int x, int y) : x(x), y(y) {}
+        Node(const Coordinate &c) : xy(c) {}
 
         int setParent(Node *p) {
             depth = p->depth + 1;
@@ -38,7 +38,7 @@ private:
             return depth;
         }
 
-        int compareTo(const Node &other) const {
+        [[nodiscard]] int compareTo(const Node &other) const {
             float f = heuristic + cost;
             float of = other.heuristic + other.cost;
 
@@ -55,97 +55,109 @@ private:
     class SortedList {
 
     private:
-        std::vector<Node *> list;
+        std::vector<Node *> list_;
 
     public:
-        Node *first() { return list.front(); }
+        Node *first() { return list_.front(); }
 
-        void clear() { list.clear(); }
+        void clear() { list_.clear(); }
 
         void add(Node *n) {
-            list.push_back(n);
-            std::sort(list.begin(), list.end(), [](const Node *n1, const Node *n2) {
+            list_.push_back(n);
+            std::sort(list_.begin(), list_.end(), [](const Node *n1, const Node *n2) {
                 return n1->compareTo(*n2) < 0;
             });
         }
 
         void remove(const Node *n) {
-            list.erase(std::remove(list.begin(), list.end(), n), list.end());
+            list_.erase(std::remove(list_.begin(), list_.end(), n), list_.end());
         }
 
-        size_t size() const { return list.size(); }
+        [[nodiscard]] size_t size() const { return list_.size(); }
 
         bool contains(const Node *n1) const {
-            return std::find(list.begin(), list.end(), n1) != std::end(list);
+            return std::find(list_.begin(), list_.end(), n1) != std::end(list_);
         }
     };
 
     std::vector<Node *> closed;
     SortedList open;
 
-    TileBasedMap map;
-    int maxSearchDistance;
+    std::unique_ptr<TileBasedMap> map;
+    std::unique_ptr<Heuristic> heuristic;
+    int maxSearchDistance = 100;
 
     std::vector<std::vector<Node>> nodes;
-    bool allowDiagMovement;
+    bool allowDiagMovement = true;
 
 public:
-    AStar(TileBasedMap map, int maxSearchDistance,
-          bool allowDiagMovement = true)
-        : map(std::move(map)), maxSearchDistance(maxSearchDistance),
-          allowDiagMovement(allowDiagMovement) {
+    AStar(std::unique_ptr<TileBasedMap> map, std::unique_ptr<Heuristic> heuristic)
+        : map(std::move(map)), heuristic(std::move(heuristic)) {
 
-        for (int x = 0; x < this->map.getWidthInTiles(); x++) {
+        for (int x = 0; x < this->map->width(); x++) {
             nodes.emplace_back();
-            for (int y = 0; y < this->map.getHeightInTiles(); y++) {
-                nodes[x].emplace_back(x, y);
+            for (int y = 0; y < this->map->height(); y++) {
+                nodes[x].emplace_back(Coordinate{x, y});
             }
         }
     }
 
-    bool inClosedList(const Node *n1) {
+    AStar &setMaxSearchDistance(int distance) {
+        maxSearchDistance = distance;
+        return *this;
+    }
+    AStar &setAllowDiagMovement(bool allow) {
+        allowDiagMovement = allow;
+        return *this;
+    }
+
+    bool inClosedList(const Node *n1) const {
         return std::find(closed.begin(), closed.end(), n1) != std::end(closed);
     }
 
-    float getHeuristicCost(int x, int y, int tx, int ty) {
-        auto dx = static_cast<float>(tx - x);
-        auto dy = static_cast<float>(ty - y);
+    bool isValidLocation(const Coordinate &c1, const Coordinate &c2) const {
+        bool invalid = (c2.x < 0) || (c2.y < 0) || (c2.x >= map->width()) ||
+                       (c2.y >= map->height());
 
-        float result = std::sqrt((dx * dx) + (dy * dy));
-
-        return result;
-    }
-
-    bool isValidLocation(int sx, int sy, int x, int y) {
-        bool invalid = (x < 0) || (y < 0) || (x >= map.getWidthInTiles()) ||
-                       (y >= map.getHeightInTiles());
-
-        if ((!invalid) && ((sx != x) || (sy != y))) {
-            invalid = map.blocked(x, y);
+        if ((!invalid) && ((c1.x != c2.x) || (c1.y != c2.y))) {
+            invalid = map->blocked(c2);
         }
 
         return !invalid;
     }
 
-    float getMovementCost(int sx, int sy, int tx, int ty) {
-        return map.getCost(sx, sy, tx, ty);
+    [[nodiscard]] float getMovementCost(const Coordinate &s, const Coordinate &t) const {
+        return map->getCost(s, t);
     }
 
-    std::optional<Path> findPath(int sx, int sy, int tx, int ty) {
+    /**
+	 * Get the heuristic cost for the given location. This determines in which
+	 * order the locations are processed.
+	 *
+	 * @param s The coordinate of the tile whose cost is being determined
+	 * @param t The coordinate of the target location
+     *
+	 * @return The heuristic cost assigned to the tile
+	 */
+    float getHeuristicCost(const Coordinate &s, const Coordinate &t) {
+        return heuristic->getCost(map.get(), s, t);
+    }
+
+    std::optional<Path> findPath(const Coordinate &s, const Coordinate &t) {
         // easy first check, if the destination is blocked, we can't get there
-        if (map.blocked(tx, ty)) {
+        if (map->blocked(t)) {
             return std::nullopt;
         }
 
         // initial state for A*. The closed group is empty. Only the starting
         // tile is in the open list and it's cost is zero, i.e. we're already there
-        nodes[sx][sy].cost = 0;
-        nodes[sx][sy].depth = 0;
+        nodes[s.x][s.y].cost = 0;
+        nodes[s.x][s.y].depth = 0;
         closed.clear();
         open.clear();
-        open.add(&nodes[sx][sy]);
+        open.add(&nodes[s.x][s.y]);
 
-        nodes[tx][ty].parent = nullptr;
+        nodes[t.x][t.y].parent = nullptr;
 
         // while we haven't found the goal and haven't exceeded our max search depth
         int maxDepth = 0;
@@ -153,7 +165,7 @@ public:
             // pull out the first node in our open list, this is determined to
             // be the most likely to be the next step based on our heuristic
             Node *current = open.first();
-            if (current == &nodes[tx][ty]) {
+            if (current == &nodes[t.x][t.y]) {
                 break;
             }
 
@@ -178,16 +190,15 @@ public:
                     }
 
                     // determine the location of the neighbour and evaluate it
-                    int xp = x + current->x;
-                    int yp = y + current->y;
+                    Coordinate p{x + current->xy.x, y + current->xy.y};
 
-                    if (isValidLocation(sx, sy, xp, yp)) {
+                    if (isValidLocation(s, p)) {
                         // the cost to get to this node is cost the current plus the
                         // movement cost to reach this node. Note that the heursitic value
                         // is only used in the sorted open list
                         float nextStepCost =
-                                current->cost + getMovementCost(current->x, current->y, xp, yp);
-                        Node *neighbour = &nodes[xp][yp];
+                                current->cost + getMovementCost(current->xy, p);
+                        Node *neighbour = &nodes[p.x][p.y];
                         //                        map.pathFinderVisited(xp, yp);
 
                         // if the new cost we've determined for this node is lower than
@@ -199,9 +210,7 @@ public:
                                 open.remove(neighbour);
                             }
                             if (inClosedList(neighbour)) {
-                                closed.erase(
-                                        std::remove(closed.begin(), closed.end(), neighbour),
-                                        closed.end());
+                                closed.erase(std::remove(closed.begin(), closed.end(), neighbour), closed.end());
                             }
                         }
 
@@ -210,7 +219,7 @@ public:
                         // step (i.e. to the open list)
                         if (!open.contains(neighbour) && !(inClosedList(neighbour))) {
                             neighbour->cost = nextStepCost;
-                            neighbour->heuristic = getHeuristicCost(xp, yp, tx, ty);
+                            neighbour->heuristic = getHeuristicCost(p, t);
                             maxDepth = std::max(maxDepth, neighbour->setParent(current));
                             open.add(neighbour);
                         }
@@ -221,7 +230,7 @@ public:
 
         // since we've got an empty open list or we've run out of search
         // there was no path. Just return null
-        if (nodes[tx][ty].parent == nullptr) {
+        if (nodes[t.x][t.y].parent == nullptr) {
             return std::nullopt;
         }
 
@@ -229,16 +238,16 @@ public:
         // references of the nodes to find out way from the target location back
         // to the start recording the nodes on the way.
         Path path;
-        Node *target = &nodes[tx][ty];
-        while (target != &nodes[sx][sy]) {
-            path.prependStep(target->x, target->y);
+        Node *target = &nodes[t.x][t.y];
+        while (target != &nodes[s.x][s.y]) {
+            path.prependStep(target->xy);
             target = target->parent;
         }
-        path.prependStep(sx, sy);
+        path.prependStep(s);
 
         // thats it, we have our path
         return path;
     }
 };
 
-#endif// DJIKSTRA_ASTAR_HPP
+#endif// PATHFINDING_ASTAR_HPP

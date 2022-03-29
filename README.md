@@ -1,3 +1,5 @@
-# A*
+# Pathfinding framework written C++
 
-http://www.cokeandcode.com/main/tutorials/path-finding/
+A simple generic pathfinding framework based on http://www.cokeandcode.com/main/tutorials/path-finding/
+
+Demonstrates use of the [A*](https://en.wikipedia.org/wiki/A*_search_algorithm) search algorithm.
