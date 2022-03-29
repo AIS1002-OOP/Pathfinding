@@ -2,7 +2,7 @@
 #ifndef PATHFINDING_CLOSESTHEURISTIC_HPP
 #define PATHFINDING_CLOSESTHEURISTIC_HPP
 
-#include "astar/Heuristic.hpp"
+#include "pathfinding/Heuristic.hpp"
 
 class ClosestSquaredHeuristic : public Heuristic {
 
