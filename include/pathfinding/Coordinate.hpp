@@ -4,6 +4,9 @@
 
 #include <ostream>
 
+/**
+ * Represents an xy coordinate in a grid
+ */
 class Coordinate {
 public:
     int x, y;

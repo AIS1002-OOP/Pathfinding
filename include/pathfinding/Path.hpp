@@ -2,6 +2,8 @@
 #ifndef PATHFINDING_PATH_HPP
 #define PATHFINDING_PATH_HPP
 
+#include "Coordinate.hpp"
+
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -55,7 +57,13 @@ public:
         return steps_.back();
     }
 
-    [[nodiscard]] bool contains(const Coordinate& c) const {
+    /**
+     * Check if a given Coordinate is part of the Path
+     * @param c The coordinate to check
+     *
+     * @return True if contains the coordinate, false otherwise
+     */
+    [[nodiscard]] bool contains(const Coordinate &c) const {
         return std::find(steps_.begin(), steps_.end(), c) != std::end(steps_);
     }
 

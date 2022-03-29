@@ -2,8 +2,13 @@
 #ifndef PATHFINDING_CLOSESTHEURISTIC_HPP
 #define PATHFINDING_CLOSESTHEURISTIC_HPP
 
-#include "pathfinding/Heuristic.hpp"
+#include "../Heuristic.hpp"
 
+/**
+ * A heuristic that uses the tile that is closest to the target
+ * as the next best tile. In this case the sqrt is removed
+ * and the distance squared is used instead
+ */
 class ClosestSquaredHeuristic : public Heuristic {
 
 public:

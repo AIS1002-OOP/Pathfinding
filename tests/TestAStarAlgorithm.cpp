@@ -4,7 +4,7 @@
 #include "GameMap.hpp"
 #include "catch.hpp"
 
-#include "pathfinding/AStar.hpp"
+#include "pathfinding/astar/AStar.hpp"
 #include "pathfinding/heuristics/ClosestHeuristic.hpp"
 
 TEST_CASE("Test algorithm") {

@@ -2,10 +2,14 @@
 #ifndef PATHFINDING_MANHATTANHEURISTIC_HPP
 #define PATHFINDING_MANHATTANHEURISTIC_HPP
 
-#include "pathfinding/Heuristic.hpp"
+#include "../Heuristic.hpp"
 
 #include <cstdlib>
 
+/**
+ * A heuristic that drives the search based on the Manhattan distance
+ * between the current location and the target
+ */
 class ManhattanHeuristic : public Heuristic {
 
 public:

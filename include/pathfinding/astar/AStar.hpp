@@ -2,20 +2,22 @@
 #ifndef PATHFINDING_ASTAR_HPP
 #define PATHFINDING_ASTAR_HPP
 
-#include "Heuristic.hpp"
-#include "Path.hpp"
-#include "TileBasedMap.hpp"
+#include "../Heuristic.hpp"
+#include "../PathFinder.hpp"
+#include "../TileBasedMap.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <optional>
 #include <utility>
 #include <vector>
 
-class AStar {
+class AStar: public Pathfinder {
 
 private:
+    /**
+	 * A single node in the search graph
+	 */
     struct Node {
 
         // The coordinate of the node
@@ -50,6 +52,8 @@ private:
                 return 0;
             }
         }
+
+        ~Node() = default;
     };
 
     class SortedList {
@@ -115,7 +119,15 @@ public:
         return std::find(closed.begin(), closed.end(), n1) != std::end(closed);
     }
 
-    bool isValidLocation(const Coordinate &c1, const Coordinate &c2) const {
+    /**
+	 * Check if a given location is valid for the supplied mover
+	 *
+	 * @param c1 The starting x coordinate
+	 * @param c2 The coordinate of the location to check
+     *
+	 * @return True if the location is valid
+	 */
+    [[nodiscard]] bool isValidLocation(const Coordinate &c1, const Coordinate &c2) const {
         bool invalid = (c2.x < 0) || (c2.y < 0) || (c2.x >= map->width()) ||
                        (c2.y >= map->height());
 
@@ -126,6 +138,14 @@ public:
         return !invalid;
     }
 
+    /**
+	 * Get the cost to move through a given location
+	 *
+	 * @param s The coordinate of the tile whose cost is being determined
+	 * @param t The coordinate of the target location
+     *
+	 * @return The cost of movement through the given tile
+	 */
     [[nodiscard]] float getMovementCost(const Coordinate &s, const Coordinate &t) const {
         return map->getCost(s, t);
     }
@@ -143,7 +163,7 @@ public:
         return heuristic->getCost(map.get(), s, t);
     }
 
-    std::optional<Path> findPath(const Coordinate &s, const Coordinate &t) {
+    std::optional<Path> findPath(const Coordinate &s, const Coordinate &t) override {
         // easy first check, if the destination is blocked, we can't get there
         if (map->blocked(t)) {
             return std::nullopt;

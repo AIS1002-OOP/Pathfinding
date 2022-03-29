@@ -1,7 +1,7 @@
 
 #include "GameMap.hpp"
 
-#include "pathfinding/AStar.hpp"
+#include "pathfinding/astar/AStar.hpp"
 #include "pathfinding/Coordinate.hpp"
 #include "pathfinding/TileBasedMap.hpp"
 #include "pathfinding/heuristics/ClosestHeuristic.hpp"

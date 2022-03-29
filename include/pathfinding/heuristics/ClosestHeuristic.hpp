@@ -2,10 +2,14 @@
 #ifndef PATHFINDING_CLOSESTHEURISTIC_HPP
 #define PATHFINDING_CLOSESTHEURISTIC_HPP
 
-#include "pathfinding/Heuristic.hpp"
+#include "../Heuristic.hpp"
 
 #include <cmath>
 
+/**
+ * A heuristic that uses the tile that is closest to the target
+ * as the next best tile.
+ */
 class ClosestHeuristic : public Heuristic {
 
 public:
