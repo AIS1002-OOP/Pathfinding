@@ -1,4 +1,4 @@
-# Pathfinding framework written C++
+# Pathfinding framework written in C++
 
 A simple generic pathfinding framework based on http://www.cokeandcode.com/main/tutorials/path-finding/
 
