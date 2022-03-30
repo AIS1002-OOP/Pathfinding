@@ -12,7 +12,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <set>
 
 class AStar : public Pathfinder {
 
@@ -43,7 +42,7 @@ public:
     std::optional<Path> findPath(const Coordinate &s, const Coordinate &t) override {
 
         std::vector<Node *> closed;
-        std::set<Node*> open; //sets are sorted
+        std::vector<Node*> open;
 
         // easy first check, if the destination is blocked, we can't get there
         if (map->blocked(t)) {
@@ -55,7 +54,7 @@ public:
         nodes[s.x][s.y].cost = 0;
         nodes[s.x][s.y].depth = 0;
 
-        open.emplace(&nodes[s.x][s.y]);
+        open.push_back(&nodes[s.x][s.y]);
 
         nodes[t.x][t.y].parent = nullptr;
 
@@ -64,7 +63,7 @@ public:
         while ((maxDepth < maxSearchDistance) && (!open.empty())) {
             // pull out the first node in our open list, this is determined to
             // be the most likely to be the next step based on our heuristic
-            Node *current = open.extract(open.begin()).value();
+            Node *current = open.front();
             if (current == &nodes[t.x][t.y]) {
                 break;
             }
@@ -119,7 +118,8 @@ public:
                             neighbour->cost = nextStepCost;
                             neighbour->heuristic = getHeuristicCost(p, t);
                             maxDepth = std::max(maxDepth, neighbour->setParent(current));
-                            open.emplace(neighbour);
+                            open.push_back(neighbour);
+                            std::sort(open.begin(), open.end());
                         }
                     }
                 }
@@ -174,7 +174,7 @@ private:
             return depth;
         }
 
-        // used by the set for sorting
+        // used for sorting
         bool operator < (const Node &other) const {
             float f = heuristic + cost;
             float of = other.heuristic + other.cost;
@@ -193,15 +193,12 @@ private:
     int maxSearchDistance = 100;
     bool allowDiagMovement = true;
 
-    template<class Container>
-    bool contains(Container &list, Node *node) {
+    static bool contains(const std::vector<Node*> &list, Node *node) {
         return std::find(list.begin(), list.end(), node) != std::end(list);
     }
 
-    template<class Container>
-    void removeFrom(Container &list, Node *node) {
-        auto find = std::find(list.begin(), list.end(), node);
-        if (find != std::end(list)) list.erase(find);
+    static void removeFrom(std::vector<Node*> &list, Node *node) {
+        list.erase(std::remove(list.begin(), list.end(), node), list.end());
     }
 
     /**
