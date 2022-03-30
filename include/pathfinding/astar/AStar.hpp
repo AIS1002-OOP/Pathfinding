@@ -42,7 +42,7 @@ public:
     std::optional<Path> findPath(const Coordinate &s, const Coordinate &t) override {
 
         std::vector<Node *> closed;
-        std::vector<Node*> open;
+        std::vector<Node *> open;
 
         // easy first check, if the destination is blocked, we can't get there
         if (map->blocked(t)) {
@@ -175,7 +175,7 @@ private:
         }
 
         // used for sorting
-        bool operator < (const Node &other) const {
+        bool operator<(const Node &other) const {
             float f = heuristic + cost;
             float of = other.heuristic + other.cost;
 
@@ -193,11 +193,11 @@ private:
     int maxSearchDistance = 100;
     bool allowDiagMovement = true;
 
-    static bool contains(const std::vector<Node*> &list, Node *node) {
+    static bool contains(const std::vector<Node *> &list, Node *node) {
         return std::find(list.begin(), list.end(), node) != std::end(list);
     }
 
-    static void removeFrom(std::vector<Node*> &list, Node *node) {
+    static void removeFrom(std::vector<Node *> &list, Node *node) {
         list.erase(std::remove(list.begin(), list.end(), node), list.end());
     }
 
