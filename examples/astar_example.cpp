@@ -37,15 +37,15 @@ int main() {
 
     std::unique_ptr<TileBasedMap> map = std::make_unique<GameMap>(data);
 
-    Coordinate sx{0, 0};
-    Coordinate tx{3, 0};
+    Coordinate start{0, 0};
+    Coordinate target{3, 0};
 
     AStar a(std::move(map), std::make_unique<ClosestHeuristic>());
-    auto path = a.findPath(sx, tx);
+    auto path = a.findPath(start, target);
 
     if (path) {
         printPath(data, *path);
     } else {
-        std::cerr << "Unable to compute path between " << sx << " and " << tx << std::endl;
+        std::cerr << "Unable to compute path between " << start << " and " << target << std::endl;
     }
 }
