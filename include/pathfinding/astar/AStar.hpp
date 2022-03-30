@@ -12,6 +12,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <set>
 
 class AStar : public Pathfinder {
 
@@ -40,6 +41,10 @@ public:
     }
 
     std::optional<Path> findPath(const Coordinate &s, const Coordinate &t) override {
+
+        std::vector<Node *> closed;
+        std::set<Node*> open; //sets are sorted
+
         // easy first check, if the destination is blocked, we can't get there
         if (map->blocked(t)) {
             return std::nullopt;
@@ -49,24 +54,23 @@ public:
         // tile is in the open list and it's cost is zero, i.e. we're already there
         nodes[s.x][s.y].cost = 0;
         nodes[s.x][s.y].depth = 0;
-        closed.clear();
-        open.clear();
-        addToOpen(&nodes[s.x][s.y]);
+
+        open.emplace(&nodes[s.x][s.y]);
 
         nodes[t.x][t.y].parent = nullptr;
 
         // while we haven't found the goal and haven't exceeded our max search depth
         int maxDepth = 0;
-        while ((maxDepth < maxSearchDistance) && (open.size() != 0)) {
+        while ((maxDepth < maxSearchDistance) && (!open.empty())) {
             // pull out the first node in our open list, this is determined to
             // be the most likely to be the next step based on our heuristic
-            Node *current = open.first();
+            Node *current = open.extract(open.begin()).value();
             if (current == &nodes[t.x][t.y]) {
                 break;
             }
 
-            removeFromOpen(current);
-            addToClosed(current);
+            removeFrom(open, current);
+            closed.push_back(current);
 
             // search through all the neighbours of the current node evaluating
             // them as next steps
@@ -100,22 +104,22 @@ public:
                         // We've determined that there might have been a better path to get
                         // to this node, so it needs to be re-evaluated
                         if (nextStepCost < neighbour->cost) {
-                            if (open.contains(neighbour)) {
-                                removeFromOpen(neighbour);
+                            if (contains(open, neighbour)) {
+                                removeFrom(open, neighbour);
                             }
-                            if (inClosedList(neighbour)) {
-                                removeFromClosed(neighbour);
+                            if (contains(closed, neighbour)) {
+                                removeFrom(closed, neighbour);
                             }
                         }
 
                         // if the node hasn't already been processed and discarded then
                         // reset it's cost to our current cost and add it as a next possible
                         // step (i.e. to the open list)
-                        if (!open.contains(neighbour) && !(inClosedList(neighbour))) {
+                        if (!contains(open, neighbour) && !(contains(closed, neighbour))) {
                             neighbour->cost = nextStepCost;
                             neighbour->heuristic = getHeuristicCost(p, t);
                             maxDepth = std::max(maxDepth, neighbour->setParent(current));
-                            addToOpen(neighbour);
+                            open.emplace(neighbour);
                         }
                     }
                 }
@@ -161,7 +165,7 @@ private:
         /** The search depth of this node */
         int depth = 0;
 
-        Node(const Coordinate &c) : xy(c) {}
+        explicit Node(const Coordinate &c) : xy(c) {}
 
         int setParent(Node *p) {
             depth = p->depth + 1;
@@ -170,85 +174,34 @@ private:
             return depth;
         }
 
-        [[nodiscard]] int compareTo(const Node &other) const {
+        // used by the set for sorting
+        bool operator < (const Node &other) const {
             float f = heuristic + cost;
             float of = other.heuristic + other.cost;
 
-            if (f < of) {
-                return -1;
-            } else if (f > of) {
-                return 1;
-            } else {
-                return 0;
-            }
+            return f < of;
         }
 
         ~Node() = default;
     };
 
-    /**
-     * A simple sorted list
-     */
-    class SortedList {
-
-    private:
-        std::vector<Node *> list_;
-
-    public:
-        Node *first() { return list_.front(); }
-
-        void clear() { list_.clear(); }
-
-        void add(Node *n) {
-            list_.push_back(n);
-            std::sort(list_.begin(), list_.end(), [](const Node *n1, const Node *n2) {
-                return n1->compareTo(*n2) < 0;
-            });
-        }
-
-        void remove(const Node *n) {
-            list_.erase(std::remove(list_.begin(), list_.end(), n), list_.end());
-        }
-
-        [[nodiscard]] size_t size() const { return list_.size(); }
-
-        bool contains(const Node *n1) const {
-            return std::find(list_.begin(), list_.end(), n1) != std::end(list_);
-        }
-    };
-
-    std::vector<Node *> closed;
-    SortedList open;
-
     std::unique_ptr<TileBasedMap> map;
     std::unique_ptr<Heuristic> heuristic;
-    int maxSearchDistance = 100;
 
     std::vector<std::vector<Node>> nodes;
+
+    int maxSearchDistance = 100;
     bool allowDiagMovement = true;
 
-    void addToOpen(Node *node) {
-        open.add(node);
+    template<class Container>
+    bool contains(Container &list, Node *node) {
+        return std::find(list.begin(), list.end(), node) != std::end(list);
     }
 
-    bool inOpenList(Node *node) {
-        return open.contains(node);
-    }
-
-    void removeFromOpen(Node *node) {
-        open.remove(node);
-    }
-
-    void addToClosed(Node *node) {
-        closed.push_back(node);
-    }
-
-    bool inClosedList(const Node *n1) const {
-        return std::find(closed.begin(), closed.end(), n1) != std::end(closed);
-    }
-
-    void removeFromClosed(Node *node) {
-        closed.erase(std::remove(closed.begin(), closed.end(), node), closed.end());
+    template<class Container>
+    void removeFrom(Container &list, Node *node) {
+        auto find = std::find(list.begin(), list.end(), node);
+        if (find != std::end(list)) list.erase(find);
     }
 
     /**
